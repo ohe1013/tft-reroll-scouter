@@ -1,141 +1,156 @@
 // src/renderer/pages/MainPage.tsx
-import { ReactElement, useMemo, useState } from 'react'
-import type { Level, Tier } from '../config/tft-config'
+import { ReactNode, useMemo, useState } from 'react'
+import { UNITS, type Level } from '../config/tft-config'
 import { calcOddsFromInputs, toPct } from '@renderer/services/oddService'
+import { extractTextLinesFromImage } from '@renderer/services/ocrService'
 
-function NumInput(props: {
-  label: string
-  value: number
-  min?: number
-  max?: number
-  step?: number
-  onChange: (v: number) => void
-}): ReactElement {
-  const { label, value, min, max, step = 1, onChange } = props
-  return (
-    <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-      <span style={{ width: 180 }}>{label}</span>
-      <input
-        type="number"
-        value={value}
-        min={min}
-        max={max}
-        step={step}
-        onChange={(e) => onChange(Number(e.target.value))}
-        style={{ width: 120, padding: '6px 8px' }}
-      />
-    </label>
-  )
-}
-
-export default function MainPage(): ReactElement {
-  // 기본값은 예시
+function MainPage(): ReactNode {
   const [level, setLevel] = useState<Level>(7)
-  const [tier, setTier] = useState<Tier>(3)
-  const [unitsInTier, setUnitsInTier] = useState<number>(13)
-  const [targetContested, setTargetContested] = useState<number>(6)
-  const [tierContestedTotal, setTierContestedTotal] = useState<number | ''>('') // 옵션
+  const [unitName, setUnitName] = useState<string>(UNITS[0].name)
+  const [usedCount, setUsedCount] = useState<number>(5)
   const [rolls, setRolls] = useState<number>(10)
+  const [ocrLoading, setOcrLoading] = useState(false)
 
   const result = useMemo(() => {
-    return calcOddsFromInputs({
-      level,
-      tier,
-      unitsInTier,
-      rolls,
-      targetContested,
-      tierContestedTotal:
-        tierContestedTotal === '' ? undefined : Math.max(0, Number(tierContestedTotal))
-    })
-  }, [level, tier, unitsInTier, rolls, targetContested, tierContestedTotal])
+    try {
+      return calcOddsFromInputs({ level, unitName, rolls, targetUsed: usedCount })
+    } catch {
+      return null
+    }
+  }, [level, unitName, usedCount, rolls])
+
+  async function handleOCRFromFile(file: File): Promise<void> {
+    setOcrLoading(true)
+    try {
+      // 1. 파일 → base64 Data URL 변환
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+
+      reader.onload = async () => {
+        const dataUrl = reader.result as string
+        console.log(dataUrl)
+        const lines = await extractTextLinesFromImage(dataUrl)
+
+        const found = UNITS.find((u) => lines.includes(u.name))
+        if (found) {
+          setUsedCount((prev) => prev + 1)
+          setUnitName(found.name)
+        } else {
+          alert('OCR로 유닛을 찾지 못했습니다.')
+          console.log('OCR 결과:', lines)
+        }
+
+        setOcrLoading(false)
+      }
+
+      reader.onerror = () => {
+        alert('이미지 읽기 실패')
+        setOcrLoading(false)
+      }
+    } catch (err) {
+      console.error(err)
+      alert('OCR 분석 중 오류 발생')
+      setOcrLoading(false)
+    }
+  }
 
   return (
-    <div style={{ padding: 20, display: 'grid', gap: 16 }}>
-      <h1 style={{ margin: 0 }}>TFT Scout — 확률 계산기 (MVP)</h1>
-
-      <div
-        style={{
-          display: 'grid',
-          gap: 12,
-          padding: 16,
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          maxWidth: 520
+    <div style={{ padding: 20, display: 'grid', gap: 20 }}>
+      <h1>TFT Scout - 확률 계산기</h1>
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files?.[0]
+          if (file) {
+            handleOCRFromFile(file)
+          }
         }}
-      >
-        <NumInput
-          label="내 레벨 (4~9)"
-          value={level}
-          min={4}
-          max={9}
-          onChange={(v) => setLevel(v as Level)}
-        />
-        <NumInput
-          label="타깃 유닛 티어 (1~5)"
-          value={tier}
-          min={1}
-          max={5}
-          onChange={(v) => setTier(v as Tier)}
-        />
-        <NumInput
-          label="해당 티어 유닛 종수"
-          value={unitsInTier}
-          min={1}
-          onChange={setUnitsInTier}
-        />
-        <NumInput
-          label="타깃 유닛이 이미 쓰인 복제 수"
-          value={targetContested}
-          min={0}
-          onChange={setTargetContested}
-        />
-        <label style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span style={{ width: 180 }}>티어 전체 소모 복제 수 (옵션)</span>
+        style={{ marginBottom: '10px' }}
+      />
+      <section style={{ display: 'grid', gap: 12, maxWidth: 500 }}>
+        <label>
+          내 레벨:
           <input
             type="number"
-            value={tierContestedTotal}
-            min={0}
-            onChange={(e) => {
-              const v = e.target.value
-              setTierContestedTotal(v === '' ? '' : Number(v))
-            }}
-            placeholder="미입력 시 타깃만 소모 가정"
-            style={{ width: 180, padding: '6px 8px' }}
+            value={level}
+            onChange={(e) => setLevel(Number(e.target.value) as Level)}
+            min={4}
+            max={9}
+            style={{ marginLeft: 8 }}
           />
         </label>
-        <NumInput label="롤 횟수" value={rolls} min={1} onChange={setRolls} />
-      </div>
 
-      <div
-        style={{
-          display: 'grid',
-          gap: 6,
-          padding: 16,
-          border: '1px solid #ddd',
-          borderRadius: 8,
-          maxWidth: 520
-        }}
-      >
-        <h3 style={{ margin: '0 0 8px' }}>결과</h3>
-        <div>
-          타깃 유닛 남은 복제 수: <b>{result.unitRemaining}</b>
-        </div>
-        <div>
-          해당 티어 남은 총 복제 수(근사): <b>{result.tierRemaining}</b>
-        </div>
-        <div>
-          상점 1회(5칸)에서 나올 확률(근사): <b>{toPct(result.perShopHit)}</b>
-        </div>
-        <div>
-          {rolls}번 롤 동안 적어도 1번 볼 확률: <b>{toPct(result.totalHit)}</b>
-        </div>
-      </div>
+        <label>
+          타깃 기물:
+          <select
+            value={unitName}
+            onChange={(e) => setUnitName(e.target.value)}
+            style={{ marginLeft: 8, padding: '4px 8px' }}
+          >
+            {UNITS.map((unit) => (
+              <option key={unit.name} value={unit.name}>
+                {unit.name} (티어 {unit.tier})
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <p style={{ color: '#666', maxWidth: 640 }}>
-        * 주의: 현재는 기대 슬롯 기반 근사치이며, 세트별 실제 수치와 경쟁 구도(다른 유닛 소모) 반영
-        정도에 따라 변동될 수 있어.
-      </p>
+        <label>
+          사용 중인 기물 수 (내 보드 + 적들):
+          <input
+            type="number"
+            value={usedCount}
+            onChange={(e) => setUsedCount(Number(e.target.value))}
+            min={0}
+            max={30}
+            style={{ marginLeft: 8 }}
+          />
+        </label>
+
+        <label>
+          롤 횟수:
+          <input
+            type="number"
+            value={rolls}
+            onChange={(e) => setRolls(Number(e.target.value))}
+            min={1}
+            max={50}
+            style={{ marginLeft: 8 }}
+          />
+        </label>
+      </section>
+
+      {result ? (
+        <section
+          style={{
+            display: 'grid',
+            gap: 6,
+            maxWidth: 500,
+            padding: '12px 16px',
+            border: '1px solid #ccc',
+            borderRadius: 8
+          }}
+        >
+          <h3 style={{ margin: 0 }}>결과</h3>
+          <div>
+            남은 기물 수: <b>{result.unitRemaining}</b>
+          </div>
+          <div>
+            해당 티어 남은 전체 기물 수: <b>{result.tierRemaining}</b>
+          </div>
+          <div>
+            한 번 상점(5칸)에서 나올 확률: <b>{toPct(result.perShopHit)}</b>
+          </div>
+          <div>
+            {rolls}번 롤 동안 적어도 1번 나올 확률: <b>{toPct(result.totalHit)}</b>
+          </div>
+        </section>
+      ) : (
+        <p style={{ color: 'red' }}>⚠️ 해당 유닛의 티어를 찾을 수 없습니다.</p>
+      )}
     </div>
   )
 }
 
+export default MainPage

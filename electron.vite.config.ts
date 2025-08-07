@@ -15,6 +15,13 @@ export default defineConfig({
         '@renderer': resolve('src/renderer/src')
       }
     },
-    plugins: [react()]
+    plugins: [react()],
+    server: {
+      headers: {
+        // ✅ blob: 기반 worker 허용
+        'Content-Security-Policy':
+          "default-src 'self' blob:; script-src 'self' 'unsafe-inline' blob:; worker-src 'self' blob:;"
+      }
+    }
   }
 })

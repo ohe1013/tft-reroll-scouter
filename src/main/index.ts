@@ -2,6 +2,7 @@ import { app, shell, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
+import { recognize } from 'tesseract.js'
 
 function createWindow(): void {
   // Create the browser window.
@@ -13,7 +14,9 @@ function createWindow(): void {
     ...(process.platform === 'linux' ? { icon } : {}),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
-      sandbox: false
+      contextIsolation: true,
+      nodeIntegration: false,
+      sandbox: true
     }
   })
 
@@ -69,6 +72,14 @@ app.on('window-all-closed', () => {
     app.quit()
   }
 })
-
+ipcMain.handle('ocr:recognizeDataUrl', async (_e, dataUrl: string) => {
+  const { data } = await recognize(dataUrl, 'eng', {
+    logger: (m) => console.log('[OCR]', m)
+    // 필요시 언어/코어 로컬 경로 지정 가능:
+    // langPath: path.join(process.resourcesPath, 'tesseract', 'lang'),
+    // corePath: path.join(process.resourcesPath, 'tesseract', 'tesseract-core-simd.wasm.js'),
+  })
+  return data.text
+})
 // In this file you can include the rest of your app's specific main process
 // code. You can also put them in separate files and require them here.

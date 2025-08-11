@@ -3,6 +3,8 @@ import { join } from 'path'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { recognize } from 'tesseract.js'
+import './ipc/riotKey'
+import './ipc/tft'
 
 function createWindow(): void {
   // Create the browser window.

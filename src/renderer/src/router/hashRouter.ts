@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 
-export type RouteKey = 'main' | 'scout' | 'settings'
+export type RouteKey = 'main' | 'scout' | 'settings' | 'vision'
 
 function parseHash(raw: string): RouteKey | null {
   const clean = raw.replace(/^#\/?/, '').trim()
   if (clean === '') return null
   const seg = clean.split('/')[0] as RouteKey
-  if (seg === 'main' || seg === 'scout' || seg === 'settings') return seg
+  if (seg === 'main' || seg === 'scout' || seg === 'settings' || seg === 'vision') return seg
   return null
 }
 

@@ -173,7 +173,6 @@ ipcMain.handle('tft:get-match-detail', async (_e, { matchId, puuId }) => {
     timeoutMs: 10_000
   })
   const m = await res.json()
-  console.log(m)
   // 참가자별 요약 + 유닛(챔피언) 컴포지션
   const participants = Array.isArray(m?.info?.participants) ? m.info.participants : []
 

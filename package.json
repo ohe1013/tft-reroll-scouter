@@ -25,6 +25,8 @@
     "@electron-toolkit/utils": "^4.0.0",
     "electron-updater": "^6.3.9",
     "keytar": "^7.9.0",
+    "onnxruntime-node": "1.22.0-rev",
+    "sharp": "^0.34.3",
     "tesseract.js": "^6.0.1"
   },
   "devDependencies": {
@@ -51,7 +53,10 @@
   "pnpm": {
     "onlyBuiltDependencies": [
       "electron",
-      "esbuild"
+      "esbuild",
+      "keytar",
+      "onnxruntime-node",
+      "sharp"
     ]
   }
 }

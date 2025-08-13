@@ -28,6 +28,7 @@ export default function AppWrapper({ route, onNavigate, children }: Props): Reac
             active={route === 'settings'}
             onClick={() => onNavigate('settings')}
           />
+          <NavItem label="분석" active={route === 'vision'} onClick={() => onNavigate('vision')} />
         </nav>
       </aside>
       <main style={{ display: 'grid', gridTemplateRows: '56px 1fr' }}>
@@ -55,6 +56,8 @@ function titleOf(route: RouteKey): string {
       return '로비 스카우트'
     case 'settings':
       return '설정'
+    case 'vision':
+      return '분석'
     default:
       return 'TFT Scout'
   }

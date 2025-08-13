@@ -164,8 +164,8 @@ export default function ScoutPage(): React.JSX.Element {
                                         fontSize: 12
                                       }}
                                     >
-                                      {u.unitId?.replace(/^TFT\\d+_/, '')}{' '}
-                                      {u.star ? '★'.repeat(Math.max(1, Math.min(3, u.star))) : ''}
+                                      {prettyUnit(u.unitId)}
+                                      {starMark(u.star)}
                                       {u.items?.length ? ` (${u.items.join(',')})` : ''}
                                     </div>
                                   ))}

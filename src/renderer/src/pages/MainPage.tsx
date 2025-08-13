@@ -1,7 +1,34 @@
 import { ReactNode, useMemo, useState } from 'react'
 import { UNITS, type Level } from '../config/tft-config'
 import { calcOddsFromInputs, toPct } from '@renderer/services/oddService'
+declare global {
+  interface Window {
+    tft: {
+      detect: (imageBuffer: ArrayBuffer) => Promise<Detection[]>
+    }
+  }
+}
+type Detection = { x1: number; y1: number; x2: number; y2: number; score: number; cls: number }
 
+// 원본 이미지 크기 얻기
+function getImageSizeFromDataUrl(dataUrl: string): Promise<{ w: number; h: number }> {
+  return new Promise((res, rej) => {
+    const img = new Image()
+    img.onload = () => res({ w: img.naturalWidth, h: img.naturalHeight })
+    img.onerror = rej
+    img.src = dataUrl
+  })
+}
+
+// ROI(영역) 정의: 16:9 기준 예시 (필요시 조정)
+// - 값은 정규화 좌표(0~1): [left, top, right, bottom]
+const FIELD_ROI: [number, number, number, number] = [0.1, 0.35, 0.9, 0.78] // 보드 영역 대략
+const BENCH_ROI: [number, number, number, number] = [0.1, 0.8, 0.9, 0.95] // 벤치(대기열) 영역 대략
+
+function isInROI(cx: number, cy: number, roi: [number, number, number, number]) {
+  const [l, t, r, b] = roi
+  return cx >= l && cx <= r && cy >= t && cy <= b
+}
 export default function MainPage(): ReactNode {
   const [level, setLevel] = useState<Level>(7)
   const [unitName, setUnitName] = useState<string>(UNITS[0].name)
@@ -27,26 +54,52 @@ export default function MainPage(): ReactNode {
   async function handleOCRFromFile(file: File): Promise<void> {
     setOcrLoading(true)
     try {
+      // 1) 파일 → ArrayBuffer & dataURL
+      const arrBuf = await file.arrayBuffer()
       const dataUrl = await fileToDataUrl(file)
-      const text = await window.ocr.recognizeDataUrl(dataUrl) // ✅ IPC 호출
-      const lines = text
-        .split('\n')
-        .map((s) => s.trim())
-        .filter(Boolean)
+      const { w, h } = await getImageSizeFromDataUrl(dataUrl)
 
-      const found = UNITS.find(
-        (u) => lines.some((line) => line.includes(u.name)) // 부분일치로 유연하게
+      // 2) YOLO 감지
+      const dets = await window.tft.detect(arrBuf) // Detection[]
+
+      // 3) 중심점(정규화) 계산
+      // - 감지 좌표가 이미 0~1 정규화라면 isNormalized=true로 간주
+      // - 아니라면 원본 폭/높이로 나눠 정규화
+      const looksNormalized =
+        dets.length > 0 &&
+        dets.every(
+          (d) => d.x1 >= 0 && d.x2 <= 1 && d.y1 >= 0 && d.y2 <= 1 && d.x1 <= d.x2 && d.y1 <= d.y2
+        )
+
+      const centers = dets.map((d) => {
+        const cx_px = (d.x1 + d.x2) / 2
+        const cy_px = (d.y1 + d.y2) / 2
+        return looksNormalized ? { cx: cx_px, cy: cy_px } : { cx: cx_px / w, cy: cy_px / h } // 픽셀→정규화
+      })
+
+      // 4) 영역별 카운트
+      let fieldCount = 0
+      let benchCount = 0
+      centers.forEach(({ cx, cy }) => {
+        if (isInROI(cx, cy, FIELD_ROI)) fieldCount++
+        else if (isInROI(cx, cy, BENCH_ROI)) benchCount++
+      })
+
+      // 5) 상태 반영: 여기서는 usedCount를 (필드+벤치)로 갱신
+      setUsedCount(fieldCount + benchCount)
+
+      // (선택) 보드/벤치 상세를 따로 보여주고 싶으면 state를 더 두 개 만들면 됨:
+      // setFieldCount(fieldCount); setBenchCount(benchCount);
+
+      // (선택) 레벨이나 롤 횟수를 이미지에서 읽을 계획이면,
+      // - 별도 ROI를 추가하고 숫자 UI만 YOLO(숫자 클래스로 학습) 또는 Tesseract로 병행.
+
+      console.log(
+        `[YOLO] field=${fieldCount}, bench=${benchCount}, total=${fieldCount + benchCount}`
       )
-      if (found) {
-        setUnitName(found.name)
-        setUsedCount((prev) => prev + 1) // 예시 로직
-      } else {
-        alert('OCR로 기물을 찾지 못했습니다.')
-        console.log('OCR 라인:', lines)
-      }
     } catch (e) {
       console.error(e)
-      alert('OCR 실패')
+      alert('감지 중 오류가 발생했습니다.')
     } finally {
       setOcrLoading(false)
     }

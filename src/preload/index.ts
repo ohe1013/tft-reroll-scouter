@@ -24,6 +24,18 @@ if (process.contextIsolated) {
         ipcRenderer.invoke('tft:get-user-recent-comps', params)
     })
 
+    contextBridge.exposeInMainWorld('vision', {
+      analyze: (params: {
+        imagePath?: string
+        imageDataUrl?: string
+        modelPath: string
+        inputName?: string
+        inputShape?: [number, number, number]
+        normalize?: boolean
+        mean?: [number, number, number]
+        std?: [number, number, number]
+      }) => ipcRenderer.invoke('vision:analyze', params)
+    })
     contextBridge.exposeInMainWorld('riotKey', {
       set: (key: string) => ipcRenderer.invoke('riot-key:set', key),
       get: () => ipcRenderer.invoke('riot-key:get'),

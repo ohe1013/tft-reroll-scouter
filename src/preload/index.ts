@@ -23,8 +23,23 @@ if (process.contextIsolated) {
       getUserRecentComps: (params: { puuid: string; count?: number }) =>
         ipcRenderer.invoke('tft:get-user-recent-comps', params)
     })
-
+    contextBridge.exposeInMainWorld('annot', {
+      listImages: (dir: string) => ipcRenderer.invoke('annot:list-images', { dir }),
+      loadClasses: (path: string) => ipcRenderer.invoke('annot:load-classes', { path }),
+      saveYolo: (outPath: string, content: string) =>
+        ipcRenderer.invoke('annot:save-yolo', { outPath, content }),
+      readAsDataUrl: (file: string) => ipcRenderer.invoke('annot:read-as-data-url', { file }), // ✅ 추가
+      readFile: (file: string) => ipcRenderer.invoke('annot:read-file', { file })
+    })
     contextBridge.exposeInMainWorld('vision', {
+      yoloDetect: (params: {
+        imagePath: string
+        modelPath: string
+        classNames: string[]
+        conf?: number
+        iouThr?: number
+        maxDet?: number
+      }) => ipcRenderer.invoke('vision:yolo-detect', params),
       analyze: (params: {
         imagePath?: string
         imageDataUrl?: string

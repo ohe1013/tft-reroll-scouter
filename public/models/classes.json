@@ -1,0 +1,312 @@
+[
+  {
+    "id": 0,
+    "name": "Aatrox",
+    "slug": "Aatrox"
+  },
+  {
+    "id": 1,
+    "name": "Ezreal",
+    "slug": "Ezreal"
+  },
+  {
+    "id": 2,
+    "name": "Garen",
+    "slug": "Garen"
+  },
+  {
+    "id": 3,
+    "name": "Gnar",
+    "slug": "Gnar"
+  },
+  {
+    "id": 4,
+    "name": "Kalista",
+    "slug": "Kalista"
+  },
+  {
+    "id": 5,
+    "name": "Kayle",
+    "slug": "Kayle"
+  },
+  {
+    "id": 6,
+    "name": "Kennen",
+    "slug": "Kennen"
+  },
+  {
+    "id": 7,
+    "name": "Lucian",
+    "slug": "Lucian"
+  },
+  {
+    "id": 8,
+    "name": "Malphite",
+    "slug": "Malphite"
+  },
+  {
+    "id": 9,
+    "name": "Naafiri",
+    "slug": "Naafiri"
+  },
+  {
+    "id": 10,
+    "name": "Rell",
+    "slug": "Rell"
+  },
+  {
+    "id": 11,
+    "name": "Sivir",
+    "slug": "Sivir"
+  },
+  {
+    "id": 12,
+    "name": "Syndra",
+    "slug": "Syndra"
+  },
+  {
+    "id": 13,
+    "name": "Zac",
+    "slug": "Zac"
+  },
+  {
+    "id": 14,
+    "name": "Dr. Mundo",
+    "slug": "Dr_Mundo"
+  },
+  {
+    "id": 15,
+    "name": "Gangplank",
+    "slug": "Gangplank"
+  },
+  {
+    "id": 16,
+    "name": "Janna",
+    "slug": "Janna"
+  },
+  {
+    "id": 17,
+    "name": "Jhin",
+    "slug": "Jhin"
+  },
+  {
+    "id": 18,
+    "name": "Kai'Sa",
+    "slug": "KaiSa"
+  },
+  {
+    "id": 19,
+    "name": "Katarina",
+    "slug": "Katarina"
+  },
+  {
+    "id": 20,
+    "name": "Kobuko",
+    "slug": "Kobuko"
+  },
+  {
+    "id": 21,
+    "name": "Lux",
+    "slug": "Lux"
+  },
+  {
+    "id": 22,
+    "name": "Rakan",
+    "slug": "Rakan"
+  },
+  {
+    "id": 23,
+    "name": "Shen",
+    "slug": "Shen"
+  },
+  {
+    "id": 24,
+    "name": "Vi",
+    "slug": "Vi"
+  },
+  {
+    "id": 25,
+    "name": "Xayah",
+    "slug": "Xayah"
+  },
+  {
+    "id": 26,
+    "name": "Xin Zhao",
+    "slug": "Xin_Zhao"
+  },
+  {
+    "id": 27,
+    "name": "Ahri",
+    "slug": "Ahri"
+  },
+  {
+    "id": 28,
+    "name": "Caitlyn",
+    "slug": "Caitlyn"
+  },
+  {
+    "id": 29,
+    "name": "Darius",
+    "slug": "Darius"
+  },
+  {
+    "id": 30,
+    "name": "Jayce",
+    "slug": "Jayce"
+  },
+  {
+    "id": 31,
+    "name": "Kog'Maw",
+    "slug": "KogMaw"
+  },
+  {
+    "id": 32,
+    "name": "Malzahar",
+    "slug": "Malzahar"
+  },
+  {
+    "id": 33,
+    "name": "Neeko",
+    "slug": "Neeko"
+  },
+  {
+    "id": 34,
+    "name": "Senna",
+    "slug": "Senna"
+  },
+  {
+    "id": 35,
+    "name": "Swain",
+    "slug": "Swain"
+  },
+  {
+    "id": 36,
+    "name": "Udyr",
+    "slug": "Udyr"
+  },
+  {
+    "id": 37,
+    "name": "Viego",
+    "slug": "Viego"
+  },
+  {
+    "id": 38,
+    "name": "Yasuo",
+    "slug": "Yasuo"
+  },
+  {
+    "id": 39,
+    "name": "Ziggs",
+    "slug": "Ziggs"
+  },
+  {
+    "id": 40,
+    "name": "Akali",
+    "slug": "Akali"
+  },
+  {
+    "id": 41,
+    "name": "Ashe",
+    "slug": "Ashe"
+  },
+  {
+    "id": 42,
+    "name": "Jarvan IV",
+    "slug": "Jarvan_IV"
+  },
+  {
+    "id": 43,
+    "name": "Jinx",
+    "slug": "Jinx"
+  },
+  {
+    "id": 44,
+    "name": "K'Sante",
+    "slug": "KSante"
+  },
+  {
+    "id": 45,
+    "name": "Karma",
+    "slug": "Karma"
+  },
+  {
+    "id": 46,
+    "name": "Leona",
+    "slug": "Leona"
+  },
+  {
+    "id": 47,
+    "name": "Poppy",
+    "slug": "Poppy"
+  },
+  {
+    "id": 48,
+    "name": "Ryze",
+    "slug": "Ryze"
+  },
+  {
+    "id": 49,
+    "name": "Samira",
+    "slug": "Samira"
+  },
+  {
+    "id": 50,
+    "name": "Sett",
+    "slug": "Sett"
+  },
+  {
+    "id": 51,
+    "name": "Volibear",
+    "slug": "Volibear"
+  },
+  {
+    "id": 52,
+    "name": "Yuumi",
+    "slug": "Yuumi"
+  },
+  {
+    "id": 53,
+    "name": "Braum",
+    "slug": "Braum"
+  },
+  {
+    "id": 54,
+    "name": "Ekko",
+    "slug": "Ekko"
+  },
+  {
+    "id": 55,
+    "name": "Gwen",
+    "slug": "Gwen"
+  },
+  {
+    "id": 56,
+    "name": "Lee Sin",
+    "slug": "Lee_Sin"
+  },
+  {
+    "id": 57,
+    "name": "Seraphine",
+    "slug": "Seraphine"
+  },
+  {
+    "id": 58,
+    "name": "Twisted Fate",
+    "slug": "Twisted_Fate"
+  },
+  {
+    "id": 59,
+    "name": "Varus",
+    "slug": "Varus"
+  },
+  {
+    "id": 60,
+    "name": "Yone",
+    "slug": "Yone"
+  },
+  {
+    "id": 61,
+    "name": "Zyra",
+    "slug": "Zyra"
+  }
+]

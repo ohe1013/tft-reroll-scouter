@@ -3,6 +3,7 @@ import { useHashRoute } from '@renderer/router/hashRouter'
 import { MainPage, ScoutPage, SettingsPage } from '@renderer/pages'
 import AppWrapper from '@renderer/layout/AppWrapper'
 import { VisionPage } from '@renderer/pages'
+import AnnotatorPage from './pages/AnnotatorPage'
 export default function App(): React.JSX.Element {
   const { route, navigate } = useHashRoute('main')
   return (
@@ -12,6 +13,7 @@ export default function App(): React.JSX.Element {
         {route === 'scout' && <ScoutPage />}
         {route === 'settings' && <SettingsPage />}
         {route === 'vision' && <VisionPage />}
+        {route === 'annotator' && <AnnotatorPage />}
       </Suspense>
     </AppWrapper>
   )

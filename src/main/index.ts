@@ -5,6 +5,8 @@ import icon from '../../resources/icon.png?asset'
 import { recognize } from 'tesseract.js'
 import './ipc/riotKey'
 import './ipc/tft'
+import './ipc/annot'
+import './ipc/detect'
 
 function createWindow(): void {
   // Create the browser window.

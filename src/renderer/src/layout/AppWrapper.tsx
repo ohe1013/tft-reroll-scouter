@@ -29,6 +29,11 @@ export default function AppWrapper({ route, onNavigate, children }: Props): Reac
             onClick={() => onNavigate('settings')}
           />
           <NavItem label="분석" active={route === 'vision'} onClick={() => onNavigate('vision')} />
+          <NavItem
+            label="라벨링"
+            active={route === 'annotator'}
+            onClick={() => onNavigate('annotator')}
+          />
         </nav>
       </aside>
       <main style={{ display: 'grid', gridTemplateRows: '56px 1fr' }}>
@@ -58,6 +63,8 @@ function titleOf(route: RouteKey): string {
       return '설정'
     case 'vision':
       return '분석'
+    case 'annotator':
+      return '라벨링'
     default:
       return 'TFT Scout'
   }

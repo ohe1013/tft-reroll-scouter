@@ -7,6 +7,7 @@ declare global {
       loadClasses(path: string): Promise<string[]>
       saveYolo(outPath: string, content: string): Promise<boolean>
       readAsDataUrl: (file: string) => Promise<string[]> // ✅ 추가
+      readFile: (file: string) => Promise<{ buffer: Buffer<ArrayBufferLike>; mime: string }>
     }
     vision: {
       yoloDetect(params: {
@@ -48,12 +49,11 @@ export default function AnnotatorPage(): React.JSX.Element {
   const [idx, setIdx] = useState(0)
   const [boxes, setBoxes] = useState<Box[]>([])
   const [active, setActive] = useState<number | null>(null)
-  const [canvasW, setCanvasW] = useState(960)
-  const [canvasH, setCanvasH] = useState(540)
+  const [canvasW] = useState(720)
+  const [canvasH] = useState(405)
   const imgRef = useRef<HTMLImageElement>(null)
   const cvsRef = useRef<HTMLCanvasElement>(null)
   const [modelPath, setModelPath] = useState('') // 선택: 자동 제안용 ONNX
-  const [imgDataUrl, setImgDataUrl] = useState<string | null>(null)
   const [imgBlobUrl, setImgBlobUrl] = useState<string | null>(null)
 
   // 이미지 목록/클래스 로드
@@ -81,56 +81,67 @@ export default function AnnotatorPage(): React.JSX.Element {
       cvs = cvsRef.current
     if (!imgEl || !cvs) return
     const ctx = cvs.getContext('2d')!
-    const w = imgEl.naturalWidth,
-      h = imgEl.naturalHeight
+    const w = imgEl.naturalWidth
+    const h = imgEl.naturalHeight
     const scale = Math.min(canvasW / w, canvasH / h)
-    const rw = Math.round(w * scale),
-      rh = Math.round(h * scale)
+    const rw = Math.round(w * scale)
+    const rh = Math.round(h * scale)
+
+    // ❗ 스타일로 크기 주지 말고 캔버스의 width/height 속성을 “픽셀”로 설정
     cvs.width = rw
     cvs.height = rh
+
+    // 그리기
     ctx.clearRect(0, 0, rw, rh)
     ctx.drawImage(imgEl, 0, 0, rw, rh)
 
     // 박스 그리기
     boxes.forEach((b, i) => {
-      const x1 = Math.round(b.x1 * scale),
-        y1 = Math.round(b.y1 * scale)
-      const x2 = Math.round(b.x2 * scale),
-        y2 = Math.round(b.y2 * scale)
+      const { x1, y1, x2, y2 } = b // 이미 canvas px 좌표
       ctx.lineWidth = 2
       ctx.strokeStyle = i === active ? '#3b82f6' : b.auto ? '#10b981' : '#ef4444'
       ctx.strokeRect(x1, y1, x2 - x1, y2 - y1)
       const label = `${i}:${classes[b.cls] ?? b.cls}${b.score ? ` ${(b.score * 100).toFixed(0)}%` : ''}`
       ctx.fillStyle = 'rgba(0,0,0,0.6)'
-      ctx.fillRect(x1, Math.max(0, y1 - 16), ctx.measureText(label).width + 8, 16)
-      ctx.fillStyle = '#fff'
       ctx.font = '12px sans-serif'
+      const tw = ctx.measureText(label).width + 8
+      ctx.fillRect(x1, Math.max(0, y1 - 16), tw, 16)
+      ctx.fillStyle = '#fff'
       ctx.fillText(label, x1 + 4, Math.max(12, y1 - 4))
     })
   }, [boxes, active, idx, canvasW, canvasH])
 
   // 마우스 드로잉
-  const drawing = useRef<{ startX: number; startY: number }>()
+  const drawing = useRef<{ startX: number; startY: number } | null>(null)
   const onMouseDown = (e: React.MouseEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect()
-    const scale = imgRef.current!.naturalWidth / e.currentTarget.width
-    const x = (e.clientX - rect.left) * scale
-    const y = (e.clientY - rect.top) * scale
+    const cvs = cvsRef.current!
+    const rect = cvs.getBoundingClientRect()
+    const sx = cvs.width / rect.width // CSS → 픽셀 스케일
+    const sy = cvs.height / rect.height
+
+    const x = (e.clientX - rect.left) * sx
+    const y = (e.clientY - rect.top) * sy
+
     drawing.current = { startX: x, startY: y }
     setActive(null)
   }
+
   const onMouseMove = (e: React.MouseEvent) => {
     if (!drawing.current) return
-    const rect = e.currentTarget.getBoundingClientRect()
-    const scale = imgRef.current!.naturalWidth / e.currentTarget.width
-    const x = (e.clientX - rect.left) * scale
-    const y = (e.clientY - rect.top) * scale
+    const cvs = cvsRef.current!
+    const rect = cvs.getBoundingClientRect()
+    const sx = cvs.width / rect.width
+    const sy = cvs.height / rect.height
+
+    const x = (e.clientX - rect.left) * sx
+    const y = (e.clientY - rect.top) * sy
+
     const { startX, startY } = drawing.current
     const x1 = Math.min(startX, x),
       y1 = Math.min(startY, y)
     const x2 = Math.max(startX, x),
       y2 = Math.max(startY, y)
-    // 미리보기: 마지막 임시 박스를 active로 사용
+
     setActive(-1)
     setBoxes((prev) => {
       const tmp = prev.slice()
@@ -142,7 +153,7 @@ export default function AnnotatorPage(): React.JSX.Element {
   const onMouseUp = () => {
     if (!drawing.current) return
     const last = boxes[boxes.length - 1]
-    drawing.current = undefined
+    drawing.current = null
     if (!last || last.cls !== -1) return
     // 확정: 기본 클래스 0으로 생성(바로 드롭다운/단축키로 수정)
     setBoxes((prev) => prev.slice(0, -1).concat([{ ...last, cls: 0 }]))
@@ -199,8 +210,8 @@ export default function AnnotatorPage(): React.JSX.Element {
 
       // res.buffer는 ArrayBuffer로 들어옵니다.
       // 타입 선언이 any면 아래처럼 강제 변환:
-      const buf = res.buffer as ArrayBuffer
-      const mime = res.mime as string
+      const buf = res.buffer as Buffer<ArrayBufferLike>
+      const mime = res.mime
 
       const blob = new Blob([buf], { type: mime })
       const url = URL.createObjectURL(blob)
@@ -219,25 +230,39 @@ export default function AnnotatorPage(): React.JSX.Element {
     if (!curImg) return
     const imgW = imgRef.current!.naturalWidth
     const imgH = imgRef.current!.naturalHeight
+
+    // 현재 캔버스가 이미지에 적용한 스케일
+    // const s = Math.min(canvasW / imgW, canvasH / imgH)
+    // const rw = Math.round(imgW * s) // cvs.width
+    // 여기선 cvs.width/height를 직접 참조해도 됨
+    const cvs = cvsRef.current!
+    const scaleBackX = imgW / cvs.width
+    const scaleBackY = imgH / cvs.height
+
     const lines = boxes
       .filter((b) => b.cls >= 0)
       .map((b) => {
-        const x1 = Math.max(0, Math.min(imgW, b.x1))
-        const y1 = Math.max(0, Math.min(imgH, b.y1))
-        const x2 = Math.max(0, Math.min(imgW, b.x2))
-        const y2 = Math.max(0, Math.min(imgH, b.y2))
-        const cx = (x1 + x2) / 2 / imgW
-        const cy = (y1 + y2) / 2 / imgH
-        const w = (x2 - x1) / imgW
-        const h = (y2 - y1) / imgH
+        // canvas px → image px
+        const ix1 = b.x1 * scaleBackX
+        const iy1 = b.y1 * scaleBackY
+        const ix2 = b.x2 * scaleBackX
+        const iy2 = b.y2 * scaleBackY
+
+        // 정규화
+        const cx = (ix1 + ix2) / 2 / imgW
+        const cy = (iy1 + iy2) / 2 / imgH
+        const w = (ix2 - ix1) / imgW
+        const h = (iy2 - iy1) / imgH
+
         return `${b.cls} ${cx.toFixed(6)} ${cy.toFixed(6)} ${w.toFixed(6)} ${h.toFixed(6)}`
       })
       .join('\n')
-    // 경로 변환: images/train/foo.jpg -> labels/train/foo.txt
+
     const outPath = curImg
       .replace(/\\images\\/, '\\labels\\')
       .replace(/\/images\//, '/labels/')
       .replace(/\.(png|jpg|jpeg|bmp|webp)$/i, '.txt')
+
     await window.annot.saveYolo(outPath, lines)
     alert(`Saved: ${outPath}`)
   }

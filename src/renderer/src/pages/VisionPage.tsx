@@ -1,16 +1,5 @@
 import { useState } from 'react'
-declare global {
-  interface Window {
-    vision: {
-      analyze: (params: any) => Promise<{
-        ok: boolean
-        outputName: string
-        outputDims: number[]
-        top5: { index: number; prob: number }[] | null
-      }>
-    }
-  }
-}
+
 export default function VisionPage(): React.JSX.Element {
   const [modelPath, setModelPath] = useState('')
   const [imageFile, setImageFile] = useState<File | null>(null)

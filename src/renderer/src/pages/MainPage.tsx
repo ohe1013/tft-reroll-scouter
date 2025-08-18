@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState } from 'react'
 import { UNITS, type Level } from '../config/tft-config'
-import { calcOddsFromInputs, toPct } from '@renderer/services/oddService'
+import { calcOddsFromInputs, CountMode, toPct } from '@renderer/services/oddService'
 declare global {
   interface Window {
     tft: {
@@ -33,16 +33,29 @@ export default function MainPage(): ReactNode {
   const [level, setLevel] = useState<Level>(7)
   const [unitName, setUnitName] = useState<string>(UNITS[0].name)
   const [usedCount, setUsedCount] = useState<number>(5)
+  const [tierUsedTotal, setTierUsedTotal] = useState<number>(0) // ✅ 동티어 전체 소비량(타깃 포함)
+  const [excludeTargetFromTierTotal, setExcludeTargetFromTierTotal] = useState<boolean>(false)
+
   const [rolls, setRolls] = useState<number>(10)
+  const [desiredCount, setDesiredCount] = useState<number>(2)
   const [ocrLoading, setOcrLoading] = useState(false)
 
   const result = useMemo(() => {
     try {
-      return calcOddsFromInputs({ level, unitName, rolls, targetUsed: usedCount })
+      return calcOddsFromInputs({
+        level,
+        unitName,
+        rolls,
+        targetUsed: usedCount,
+        tierUsedTotal,
+        desiredCount,
+        excludeTargetFromTierTotal
+      })
     } catch {
       return null
     }
-  }, [level, unitName, usedCount, rolls])
+  }, [level, unitName, usedCount, tierUsedTotal, desiredCount, excludeTargetFromTierTotal, rolls])
+
   function fileToDataUrl(file: File): Promise<string> {
     return new Promise((res, rej) => {
       const r = new FileReader()
@@ -119,7 +132,7 @@ export default function MainPage(): ReactNode {
         }}
         style={{ marginBottom: '10px' }}
       />
-      <section style={{ display: 'grid', gap: 12, maxWidth: 500 }}>
+      <section style={{ display: 'grid', gap: 12, maxWidth: 560 }}>
         <label>
           내 레벨:
           <input
@@ -147,14 +160,50 @@ export default function MainPage(): ReactNode {
           </select>
         </label>
 
-        <label>
-          사용 중인 기물 수 (내 보드 + 적들):
+        <label title="내 보드 + 적들의 타깃 유닛 소비량">
+          타깃 소비 수:
           <input
             type="number"
             value={usedCount}
             onChange={(e) => setUsedCount(Number(e.target.value))}
             min={0}
             max={30}
+            style={{ marginLeft: 8 }}
+          />
+        </label>
+
+        <label title="같은 티어의 모든 유닛에서 소비된 총합(타깃 포함)">
+          동티어 전체 소비 수:
+          <input
+            type="number"
+            value={tierUsedTotal}
+            onChange={(e) => setTierUsedTotal(Number(e.target.value))}
+            min={0}
+            style={{ marginLeft: 8 }}
+          />
+        </label>
+
+        {/* ✅ 타깃 포함/제외 토글 */}
+        <label title="동티어 총 소비 계산에서 타깃 소비량을 제외합니다 (혼동 방지용)">
+          <input
+            type="checkbox"
+            checked={excludeTargetFromTierTotal}
+            onChange={(e) => setExcludeTargetFromTierTotal(e.target.checked)}
+            style={{ marginRight: 6 }}
+          />
+          동티어 총 소비에서 타깃 제외
+        </label>
+
+        <hr />
+
+        {/* ➕ 새 기능: 몇 장 이상 뽑고 싶은지 */}
+        <label title="전체 롤 동안 최소 몇 장을 뽑을지 확률 계산">
+          최소 뽑고 싶은 개수:
+          <input
+            type="number"
+            value={desiredCount}
+            onChange={(e) => setDesiredCount(Math.max(0, Number(e.target.value)))}
+            min={0}
             style={{ marginLeft: 8 }}
           />
         </label>
@@ -176,25 +225,45 @@ export default function MainPage(): ReactNode {
         <section
           style={{
             display: 'grid',
-            gap: 6,
-            maxWidth: 500,
+            gap: 8,
+            maxWidth: 560,
             padding: '12px 16px',
             border: '1px solid #ccc',
             borderRadius: 8
           }}
         >
           <h3 style={{ margin: 0 }}>결과</h3>
+
           <div>
-            남은 기물 수: <b>{result.unitRemaining}</b>
+            남은 기물 수(타깃): <b>{result.unitRemaining}</b>
           </div>
           <div>
-            해당 티어 남은 전체 기물 수: <b>{result.tierRemaining}</b>
+            동티어 남은 전체 기물 수: <b>{result.tierRemaining}</b>
+          </div>
+
+          <div>
+            슬롯 1칸 히트 확률(초기): <b>{toPct(result.pSlotHit)}</b>
           </div>
           <div>
-            한 번 상점(5칸)에서 나올 확률: <b>{toPct(result.perShopHit)}</b>
+            상점(5칸) 히트 확률(초기): <b>{toPct(result.pShopHit)}</b>
+          </div>
+
+          <div>
+            한 번 상점에서 최소 1장(초기 근사): <b>{toPct(result.perShopHit)}</b>
           </div>
           <div>
-            {rolls}번 롤 동안 적어도 1번 나올 확률: <b>{toPct(result.totalHit)}</b>
+            {rolls}번 롤 동안 최소 1장(근사): <b>{toPct(result.totalHit)}</b>
+          </div>
+
+          <hr />
+
+          <div>
+            전체 롤 동안 <b>최소 {result.desiredCount}장</b> 뽑을 확률(비복원 DP):{' '}
+            <b>{toPct(result.pAtLeastK)}</b>
+          </div>
+          <div>
+            전체 롤 동안 <b>정확히 {result.desiredCount}장</b> 뽑을 확률(비복원 DP):{' '}
+            <b>{toPct(result.pExactlyK)}</b>
           </div>
         </section>
       ) : (
